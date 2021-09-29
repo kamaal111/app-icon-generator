@@ -21,57 +21,40 @@ func main() {
 	start := time.Now()
 
 	contentsFile, err := ioutil.ReadFile(filepath.Join(".", "assets", CONTENTS_FILENAME))
-	if err != nil {
-		log.Fatalln(err)
-	}
+	checkError(err)
 
 	contentsFileContent := ContentFile{}
 	err = json.Unmarshal([]byte(contentsFile), &contentsFileContent)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	checkError(err)
 
 	input, err := os.Open("logo.png")
-	if err != nil {
-		log.Fatalln(err)
-	}
+	checkError(err)
 	defer input.Close()
 
 	outputDirectory := filepath.Join(".", "output", "AppIcon.appiconset")
 	err = os.MkdirAll(outputDirectory, os.ModePerm)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	checkError(err)
 
 	err = ioutil.WriteFile(filepath.Join(outputDirectory, CONTENTS_FILENAME), contentsFile, 0644)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	checkError(err)
 
 	for _, imageItem := range contentsFileContent.Images {
 		sizeValueString := splitStringByX(imageItem.Size)[0]
 		sizeValue, err := strconv.ParseFloat(sizeValueString, 8)
-		if err != nil {
-			log.Fatalln(err)
-		}
+		checkError(err)
+
 		scaleValueString := splitStringByX(imageItem.Scale)[0]
 		scaleValue, err := strconv.ParseFloat(scaleValueString, 8)
-		if err != nil {
-			log.Fatalln(err)
-		}
+		checkError(err)
 		log.Println(sizeValue * scaleValue)
 	}
 
 	output, err := os.Create("logo_resized.png")
-	if err != nil {
-		log.Fatalln(err)
-	}
+	checkError(err)
 	defer output.Close()
 
 	decodedInput, err := png.Decode(input)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	checkError(err)
 
 	inputSpecs := image.NewRGBA(image.Rect(0, 0, 1024, 1024))
 	draw.NearestNeighbor.Scale(inputSpecs, inputSpecs.Rect, decodedInput, decodedInput.Bounds(), draw.Over, nil)
@@ -79,6 +62,12 @@ func main() {
 
 	elapsed := time.Since(start)
 	log.Printf("done creating icons in %s", elapsed)
+}
+
+func checkError(err error) {
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func isX(r rune) bool {
