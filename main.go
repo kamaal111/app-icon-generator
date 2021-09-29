@@ -9,8 +9,6 @@ import (
 	"golang.org/x/image/draw"
 )
 
-const LOGO_SIZE = 800
-
 func main() {
 	input, err := os.Open("logo.png")
 	if err != nil {
@@ -29,10 +27,9 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	log.Println(decodedInput.Bounds().Max.X)
-	log.Println(decodedInput.Bounds().Max.Y)
-
-	inputSpecs := image.NewRGBA(image.Rect(0, 0, decodedInput.Bounds().Max.X/2, decodedInput.Bounds().Max.Y/2))
+	inputSpecs := image.NewRGBA(image.Rect(0, 0, 1024, 1024))
 	draw.NearestNeighbor.Scale(inputSpecs, inputSpecs.Rect, decodedInput, decodedInput.Bounds(), draw.Over, nil)
 	png.Encode(output, inputSpecs)
+
+	log.Println("done creating icons")
 }
