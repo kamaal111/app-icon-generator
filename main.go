@@ -7,14 +7,20 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/image/draw"
 )
 
+const CONTENTS_FILENAME = "Contents.json"
+
 func main() {
-	contentsFile, err := ioutil.ReadFile("assets/Contents.json")
+	start := time.Now()
+
+	contentsFile, err := ioutil.ReadFile(filepath.Join(".", "assets", CONTENTS_FILENAME))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -25,29 +31,36 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	input, err := os.Open("logo.png")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer input.Close()
+
+	outputDirectory := filepath.Join(".", "output", "AppIcon.appiconset")
+	err = os.MkdirAll(outputDirectory, os.ModePerm)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	err = ioutil.WriteFile(filepath.Join(outputDirectory, CONTENTS_FILENAME), contentsFile, 0644)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	for _, imageItem := range contentsFileContent.Images {
-		sizeValueString := strings.FieldsFunc(imageItem.Size, func(r rune) bool {
-			return r == 'x'
-		})[0]
+		sizeValueString := splitStringByX(imageItem.Size)[0]
 		sizeValue, err := strconv.ParseFloat(sizeValueString, 8)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		scaleValueString := strings.FieldsFunc(imageItem.Scale, func(r rune) bool {
-			return r == 'x'
-		})[0]
+		scaleValueString := splitStringByX(imageItem.Scale)[0]
 		scaleValue, err := strconv.ParseFloat(scaleValueString, 8)
 		if err != nil {
 			log.Fatalln(err)
 		}
 		log.Println(sizeValue * scaleValue)
 	}
-
-	input, err := os.Open("logo.png")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer input.Close()
 
 	output, err := os.Create("logo_resized.png")
 	if err != nil {
@@ -64,7 +77,16 @@ func main() {
 	draw.NearestNeighbor.Scale(inputSpecs, inputSpecs.Rect, decodedInput, decodedInput.Bounds(), draw.Over, nil)
 	png.Encode(output, inputSpecs)
 
-	log.Println("done creating icons")
+	elapsed := time.Since(start)
+	log.Printf("done creating icons in %s", elapsed)
+}
+
+func isX(r rune) bool {
+	return r == 'x'
+}
+
+func splitStringByX(str string) []string {
+	return strings.FieldsFunc(str, isX)
 }
 
 type ImageItem struct {
