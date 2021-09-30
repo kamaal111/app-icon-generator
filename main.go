@@ -27,18 +27,24 @@ func main() {
 	err = json.Unmarshal([]byte(contentsFile), &contentsFileContent)
 	checkError(err)
 
-	input, err := os.Open("logo.png")
-	checkError(err)
-	defer input.Close()
-
 	outputDirectory := filepath.Join(".", "output", "AppIcon.appiconset")
+
+	os.RemoveAll(outputDirectory)
+
 	err = os.MkdirAll(outputDirectory, os.ModePerm)
 	checkError(err)
 
 	err = ioutil.WriteFile(filepath.Join(outputDirectory, CONTENTS_FILENAME), contentsFile, 0644)
 	checkError(err)
 
-	for index, imageItem := range contentsFileContent.Images {
+	var createdImageNames []string
+
+	for _, imageItem := range contentsFileContent.Images {
+		if contains(createdImageNames, imageItem.Filename) {
+			log.Println("file already created")
+			continue
+		}
+
 		sizeValueString := splitStringByX(imageItem.Size)[0]
 		sizeValue, err := strconv.ParseFloat(sizeValueString, 64)
 		checkError(err)
@@ -58,6 +64,10 @@ func main() {
 		checkError(err)
 		defer output.Close()
 
+		input, err := os.Open("logo.png")
+		checkError(err)
+		defer input.Close()
+
 		decodedInput, err := png.Decode(input)
 		checkError(err)
 
@@ -65,13 +75,20 @@ func main() {
 		draw.NearestNeighbor.Scale(inputSpecs, inputSpecs.Rect, decodedInput, decodedInput.Bounds(), draw.Over, nil)
 		png.Encode(output, inputSpecs)
 
-		if index == 1 {
-			break
-		}
+		createdImageNames = append(createdImageNames, imageItem.Filename)
 	}
 
 	elapsed := time.Since(start)
 	log.Printf("done creating icons in %s\n", elapsed)
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
 
 func checkError(err error) {
