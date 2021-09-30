@@ -45,41 +45,45 @@ func main() {
 			continue
 		}
 
-		sizeValueString := splitStringByX(imageItem.Size)[0]
-		sizeValue, err := strconv.ParseFloat(sizeValueString, 64)
-		checkError(err)
-
-		scaleValueString := splitStringByX(imageItem.Scale)[0]
-		scaleValue, err := strconv.ParseFloat(scaleValueString, 64)
-		checkError(err)
-
-		scaledSize := sizeValue * scaleValue
-
-		if imageItem.Filename == "" {
-			log.Printf("could not find filename for size of %f \n", scaledSize)
-			continue
-		}
-
-		output, err := os.Create(filepath.Join(outputDirectory, imageItem.Filename))
-		checkError(err)
-		defer output.Close()
-
-		input, err := os.Open("logo.png")
-		checkError(err)
-		defer input.Close()
-
-		decodedInput, err := png.Decode(input)
-		checkError(err)
-
-		inputSpecs := image.NewRGBA(image.Rect(0, 0, int(scaledSize), int(scaledSize)))
-		draw.NearestNeighbor.Scale(inputSpecs, inputSpecs.Rect, decodedInput, decodedInput.Bounds(), draw.Over, nil)
-		png.Encode(output, inputSpecs)
+		createImage(imageItem, outputDirectory)
 
 		createdImageNames = append(createdImageNames, imageItem.Filename)
 	}
 
 	elapsed := time.Since(start)
 	log.Printf("done creating icons in %s\n", elapsed)
+}
+
+func createImage(imageItem ImageItem, outputDirectory string) {
+	sizeValueString := splitStringByX(imageItem.Size)[0]
+	sizeValue, err := strconv.ParseFloat(sizeValueString, 64)
+	checkError(err)
+
+	scaleValueString := splitStringByX(imageItem.Scale)[0]
+	scaleValue, err := strconv.ParseFloat(scaleValueString, 64)
+	checkError(err)
+
+	scaledSize := sizeValue * scaleValue
+
+	if imageItem.Filename == "" {
+		log.Printf("could not find filename for size of %f \n", scaledSize)
+		return
+	}
+
+	output, err := os.Create(filepath.Join(outputDirectory, imageItem.Filename))
+	checkError(err)
+	defer output.Close()
+
+	input, err := os.Open("logo.png")
+	checkError(err)
+	defer input.Close()
+
+	decodedInput, err := png.Decode(input)
+	checkError(err)
+
+	inputSpecs := image.NewRGBA(image.Rect(0, 0, int(scaledSize), int(scaledSize)))
+	draw.NearestNeighbor.Scale(inputSpecs, inputSpecs.Rect, decodedInput, decodedInput.Bounds(), draw.Over, nil)
+	png.Encode(output, inputSpecs)
 }
 
 func contains(s []string, e string) bool {
