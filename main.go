@@ -24,8 +24,13 @@ func main() {
 
 	outputPath := initializeFlag("output path", "", "-output", "o")
 	if outputPath == "" {
-		fmt.Printf("no output path provided\nplease give a output path by giving this command the -o or -output flag with the destination")
-		exit1()
+		fmt.Printf("no output path provided\nplease give a output path by giving this command the -o or -output flag with the destination\n")
+		os.Exit(1)
+	}
+	inputPath := initializeFlag("input path", "", "-input", "i")
+	if inputPath == "" {
+		fmt.Printf("no input path provided\nplease give a input path by giving this command the -i or -input flag with the destination\n")
+		os.Exit(1)
 	}
 
 	contentsFile, err := ioutil.ReadFile(filepath.Join(".", "assets", CONTENTS_FILENAME))
@@ -35,7 +40,7 @@ func main() {
 	err = json.Unmarshal([]byte(contentsFile), &contentsFileContent)
 	checkError(err)
 
-	outputDirectory := filepath.Join(".", "output", "AppIcon.appiconset")
+	outputDirectory := filepath.Join(outputPath, "AppIcon.appiconset")
 
 	os.RemoveAll(outputDirectory)
 
@@ -71,7 +76,7 @@ func main() {
 
 		channel := make(chan string)
 		channelsCreated = append(channelsCreated, channel)
-		go createImage(imageItem, scaledSize, outputDirectory, channel)
+		go createImage(inputPath, imageItem, scaledSize, outputDirectory, channel)
 
 		createdImageNames = append(createdImageNames, imageItem.Filename)
 	}
@@ -86,12 +91,12 @@ func main() {
 	log.Printf("done creating icons in %s\n", elapsed)
 }
 
-func createImage(imageItem ImageItem, size float64, outputDirectory string, channel chan string) {
+func createImage(inputPath string, imageItem ImageItem, size float64, outputDirectory string, channel chan string) {
 	output, err := os.Create(filepath.Join(outputDirectory, imageItem.Filename))
 	checkError(err)
 	defer output.Close()
 
-	input, err := os.Open("logo.png")
+	input, err := os.Open(inputPath)
 	checkError(err)
 	defer input.Close()
 
@@ -107,15 +112,11 @@ func createImage(imageItem ImageItem, size float64, outputDirectory string, chan
 
 func initializeFlag(usage string, flagDefault string, longVariable string, shortVariable string) string {
 	var value string
+	log.Println(longVariable)
 	flag.StringVar(&value, longVariable, flagDefault, usage)
 	flag.StringVar(&value, shortVariable, flagDefault, usage)
 	flag.Parse()
 	return value
-}
-
-func exit1() {
-	fmt.Println("exit status 1")
-	os.Exit(1)
 }
 
 func contains(s []string, e string) bool {
