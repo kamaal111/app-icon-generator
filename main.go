@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
+	"fmt"
 	"image"
 	"image/png"
 	"io/ioutil"
@@ -19,6 +21,12 @@ const CONTENTS_FILENAME = "Contents.json"
 
 func main() {
 	start := time.Now()
+
+	outputPath := initializeFlag("output path", "", "-output", "o")
+	if outputPath == "" {
+		fmt.Printf("no output path provided\nplease give a output path by giving this command the -o or -output flag with the destination")
+		exit1()
+	}
 
 	contentsFile, err := ioutil.ReadFile(filepath.Join(".", "assets", CONTENTS_FILENAME))
 	checkError(err)
@@ -68,8 +76,10 @@ func main() {
 		createdImageNames = append(createdImageNames, imageItem.Filename)
 	}
 
-	for _, channel := range channelsCreated {
+	channelsCreatedLength := len(channelsCreated)
+	for index, channel := range channelsCreated {
 		<-channel
+		log.Printf("created %d out of %d\n", index+1, channelsCreatedLength)
 	}
 
 	elapsed := time.Since(start)
@@ -93,6 +103,19 @@ func createImage(imageItem ImageItem, size float64, outputDirectory string, chan
 	png.Encode(output, inputSpecs)
 
 	channel <- imageItem.Filename
+}
+
+func initializeFlag(usage string, flagDefault string, longVariable string, shortVariable string) string {
+	var value string
+	flag.StringVar(&value, longVariable, flagDefault, usage)
+	flag.StringVar(&value, shortVariable, flagDefault, usage)
+	flag.Parse()
+	return value
+}
+
+func exit1() {
+	fmt.Println("exit status 1")
+	os.Exit(1)
 }
 
 func contains(s []string, e string) bool {
