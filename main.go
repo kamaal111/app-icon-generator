@@ -38,38 +38,45 @@ func main() {
 	checkError(err)
 
 	var createdImageNames []string
+	var channelsCreated []chan string
 
 	for _, imageItem := range contentsFileContent.Images {
-		if contains(createdImageNames, imageItem.Filename) {
-			log.Println("file already created")
+		sizeValueString := splitStringByX(imageItem.Size)[0]
+		sizeValue, err := strconv.ParseFloat(sizeValueString, 64)
+		checkError(err)
+
+		scaleValueString := splitStringByX(imageItem.Scale)[0]
+		scaleValue, err := strconv.ParseFloat(scaleValueString, 64)
+		checkError(err)
+
+		scaledSize := sizeValue * scaleValue
+
+		if imageItem.Filename == "" {
+			log.Printf("could not find filename for size of %f \n", scaledSize)
 			continue
 		}
 
-		createImage(imageItem, outputDirectory)
+		if contains(createdImageNames, imageItem.Filename) {
+			log.Printf("file with name %s already created\n", imageItem.Filename)
+			continue
+		}
+
+		channel := make(chan string)
+		channelsCreated = append(channelsCreated, channel)
+		go createImage(imageItem, scaledSize, outputDirectory, channel)
 
 		createdImageNames = append(createdImageNames, imageItem.Filename)
+	}
+
+	for _, channel := range channelsCreated {
+		<-channel
 	}
 
 	elapsed := time.Since(start)
 	log.Printf("done creating icons in %s\n", elapsed)
 }
 
-func createImage(imageItem ImageItem, outputDirectory string) {
-	sizeValueString := splitStringByX(imageItem.Size)[0]
-	sizeValue, err := strconv.ParseFloat(sizeValueString, 64)
-	checkError(err)
-
-	scaleValueString := splitStringByX(imageItem.Scale)[0]
-	scaleValue, err := strconv.ParseFloat(scaleValueString, 64)
-	checkError(err)
-
-	scaledSize := sizeValue * scaleValue
-
-	if imageItem.Filename == "" {
-		log.Printf("could not find filename for size of %f \n", scaledSize)
-		return
-	}
-
+func createImage(imageItem ImageItem, size float64, outputDirectory string, channel chan string) {
 	output, err := os.Create(filepath.Join(outputDirectory, imageItem.Filename))
 	checkError(err)
 	defer output.Close()
@@ -81,9 +88,11 @@ func createImage(imageItem ImageItem, outputDirectory string) {
 	decodedInput, err := png.Decode(input)
 	checkError(err)
 
-	inputSpecs := image.NewRGBA(image.Rect(0, 0, int(scaledSize), int(scaledSize)))
+	inputSpecs := image.NewRGBA(image.Rect(0, 0, int(size), int(size)))
 	draw.NearestNeighbor.Scale(inputSpecs, inputSpecs.Rect, decodedInput, decodedInput.Bounds(), draw.Over, nil)
 	png.Encode(output, inputSpecs)
+
+	channel <- imageItem.Filename
 }
 
 func contains(s []string, e string) bool {
