@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"image"
+	"image/png"
 	"io/ioutil"
 	"log"
 	"os"
@@ -9,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/image/draw"
 )
 
 const CONTENTS_FILENAME = "Contents.json"
@@ -36,28 +40,36 @@ func main() {
 
 	for _, imageItem := range contentsFileContent.Images {
 		sizeValueString := splitStringByX(imageItem.Size)[0]
-		sizeValue, err := strconv.ParseFloat(sizeValueString, 8)
+		sizeValue, err := strconv.ParseFloat(sizeValueString, 64)
 		checkError(err)
 
 		scaleValueString := splitStringByX(imageItem.Scale)[0]
-		scaleValue, err := strconv.ParseFloat(scaleValueString, 8)
+		scaleValue, err := strconv.ParseFloat(scaleValueString, 64)
 		checkError(err)
-		log.Println(sizeValue * scaleValue)
+
+		scaledSize := sizeValue * scaleValue
+
+		if imageItem.Filename == "" {
+			log.Printf("could not find filename for size of %f \n", scaledSize)
+			continue
+		}
+
+		output, err := os.Create(filepath.Join(outputDirectory, imageItem.Filename))
+		checkError(err)
+		defer output.Close()
+
+		decodedInput, err := png.Decode(input)
+		checkError(err)
+
+		inputSpecs := image.NewRGBA(image.Rect(0, 0, int(scaledSize), int(scaledSize)))
+		draw.NearestNeighbor.Scale(inputSpecs, inputSpecs.Rect, decodedInput, decodedInput.Bounds(), draw.Over, nil)
+		png.Encode(output, inputSpecs)
+
+		break
 	}
 
-	// output, err := os.Create("logo_resized.png")
-	// checkError(err)
-	// defer output.Close()
-
-	// decodedInput, err := png.Decode(input)
-	// checkError(err)
-
-	// inputSpecs := image.NewRGBA(image.Rect(0, 0, 1024, 1024))
-	// draw.NearestNeighbor.Scale(inputSpecs, inputSpecs.Rect, decodedInput, decodedInput.Bounds(), draw.Over, nil)
-	// png.Encode(output, inputSpecs)
-
 	elapsed := time.Since(start)
-	log.Printf("done creating icons in %s", elapsed)
+	log.Printf("done creating icons in %s\n", elapsed)
 }
 
 func checkError(err error) {
