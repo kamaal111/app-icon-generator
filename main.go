@@ -38,7 +38,7 @@ func main() {
 	err = ioutil.WriteFile(filepath.Join(outputDirectory, CONTENTS_FILENAME), contentsFile, 0644)
 	checkError(err)
 
-	for _, imageItem := range contentsFileContent.Images {
+	for index, imageItem := range contentsFileContent.Images {
 		sizeValueString := splitStringByX(imageItem.Size)[0]
 		sizeValue, err := strconv.ParseFloat(sizeValueString, 64)
 		checkError(err)
@@ -65,7 +65,9 @@ func main() {
 		draw.NearestNeighbor.Scale(inputSpecs, inputSpecs.Rect, decodedInput, decodedInput.Bounds(), draw.Over, nil)
 		png.Encode(output, inputSpecs)
 
-		break
+		if index == 1 {
+			break
+		}
 	}
 
 	elapsed := time.Since(start)
