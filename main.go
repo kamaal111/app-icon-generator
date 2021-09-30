@@ -22,14 +22,17 @@ const CONTENTS_FILENAME = "Contents.json"
 func main() {
 	start := time.Now()
 
-	outputPath := initializeFlag("output path", "", "-output", "o")
-	if outputPath == "" {
-		fmt.Printf("no output path provided\nplease give a output path by giving this command the -o or -output flag with the destination\n")
+	outputPath := flag.String("o", "", "output path")
+	inputPath := flag.String("i", "", "input path")
+
+	flag.Parse()
+
+	if *outputPath == "" {
+		fmt.Printf("no output path provided\nplease give a output path by giving this command the -o flag with the destination\n")
 		os.Exit(1)
 	}
-	inputPath := initializeFlag("input path", "", "-input", "i")
-	if inputPath == "" {
-		fmt.Printf("no input path provided\nplease give a input path by giving this command the -i or -input flag with the destination\n")
+	if *inputPath == "" {
+		fmt.Printf("no input path provided\nplease give a input path by giving this command the -i flag with the destination\n")
 		os.Exit(1)
 	}
 
@@ -40,7 +43,7 @@ func main() {
 	err = json.Unmarshal([]byte(contentsFile), &contentsFileContent)
 	checkError(err)
 
-	outputDirectory := filepath.Join(outputPath, "AppIcon.appiconset")
+	outputDirectory := filepath.Join(*outputPath, "AppIcon.appiconset")
 
 	os.RemoveAll(outputDirectory)
 
@@ -76,7 +79,7 @@ func main() {
 
 		channel := make(chan string)
 		channelsCreated = append(channelsCreated, channel)
-		go createImage(inputPath, imageItem, scaledSize, outputDirectory, channel)
+		go createImage(*inputPath, imageItem, scaledSize, outputDirectory, channel)
 
 		createdImageNames = append(createdImageNames, imageItem.Filename)
 	}
@@ -108,15 +111,6 @@ func createImage(inputPath string, imageItem ImageItem, size float64, outputDire
 	png.Encode(output, inputSpecs)
 
 	channel <- imageItem.Filename
-}
-
-func initializeFlag(usage string, flagDefault string, longVariable string, shortVariable string) string {
-	var value string
-	log.Println(longVariable)
-	flag.StringVar(&value, longVariable, flagDefault, usage)
-	flag.StringVar(&value, shortVariable, flagDefault, usage)
-	flag.Parse()
-	return value
 }
 
 func contains(s []string, e string) bool {
