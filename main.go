@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"image"
-	"image/png"
 	"io/ioutil"
 	"log"
 	"os"
@@ -11,8 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"golang.org/x/image/draw"
 )
 
 const CONTENTS_FILENAME = "Contents.json"
@@ -49,16 +45,16 @@ func main() {
 		log.Println(sizeValue * scaleValue)
 	}
 
-	output, err := os.Create("logo_resized.png")
-	checkError(err)
-	defer output.Close()
+	// output, err := os.Create("logo_resized.png")
+	// checkError(err)
+	// defer output.Close()
 
-	decodedInput, err := png.Decode(input)
-	checkError(err)
+	// decodedInput, err := png.Decode(input)
+	// checkError(err)
 
-	inputSpecs := image.NewRGBA(image.Rect(0, 0, 1024, 1024))
-	draw.NearestNeighbor.Scale(inputSpecs, inputSpecs.Rect, decodedInput, decodedInput.Bounds(), draw.Over, nil)
-	png.Encode(output, inputSpecs)
+	// inputSpecs := image.NewRGBA(image.Rect(0, 0, 1024, 1024))
+	// draw.NearestNeighbor.Scale(inputSpecs, inputSpecs.Rect, decodedInput, decodedInput.Bounds(), draw.Over, nil)
+	// png.Encode(output, inputSpecs)
 
 	elapsed := time.Since(start)
 	log.Printf("done creating icons in %s", elapsed)
