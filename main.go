@@ -7,7 +7,6 @@ import (
 	"image"
 	"image/png"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -24,6 +23,7 @@ func main() {
 
 	outputPath := flag.String("o", "", "output path")
 	inputPath := flag.String("i", "", "input path")
+	verbose := flag.Bool("v", false, "verbose")
 
 	flag.Parse()
 
@@ -68,12 +68,12 @@ func main() {
 		scaledSize := sizeValue * scaleValue
 
 		if imageItem.Filename == "" {
-			log.Printf("could not find filename for size of %f \n", scaledSize)
+			logVerbose(fmt.Sprintf("could not find filename for size of %f", scaledSize), *verbose)
 			continue
 		}
 
 		if contains(createdImageNames, imageItem.Filename) {
-			log.Printf("file with name %s already created\n", imageItem.Filename)
+			logVerbose(fmt.Sprintf("file with name %s already created", imageItem.Filename), *verbose)
 			continue
 		}
 
@@ -87,11 +87,11 @@ func main() {
 	channelsCreatedLength := len(channelsCreated)
 	for index, channel := range channelsCreated {
 		<-channel
-		log.Printf("created %d out of %d\n", index+1, channelsCreatedLength)
+		logVerbose(fmt.Sprintf("created %d out of %d", index+1, channelsCreatedLength), *verbose)
 	}
 
 	elapsed := time.Since(start)
-	log.Printf("done creating icons in %s\n", elapsed)
+	fmt.Printf("done creating icons in %s\n", elapsed)
 }
 
 func createImage(inputPath string, imageItem ImageItem, size float64, outputDirectory string, channel chan string) {
@@ -113,9 +113,15 @@ func createImage(inputPath string, imageItem ImageItem, size float64, outputDire
 	channel <- imageItem.Filename
 }
 
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
+func logVerbose(text string, enabled bool) {
+	if enabled {
+		fmt.Println(text)
+	}
+}
+
+func contains(array []string, searchValue string) bool {
+	for _, item := range array {
+		if item == searchValue {
 			return true
 		}
 	}
@@ -124,16 +130,15 @@ func contains(s []string, e string) bool {
 
 func checkError(err error) {
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
 
-func isX(r rune) bool {
-	return r == 'x'
-}
-
 func splitStringByX(str string) []string {
-	return strings.FieldsFunc(str, isX)
+	return strings.FieldsFunc(str, func(r rune) bool {
+		return r == 'x'
+	})
 }
 
 type ImageItem struct {
