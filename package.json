@@ -1,0 +1,22 @@
+{
+  "name": "app-icon-generator",
+  "version": "0.1.0",
+  "description": "Generate logo sizes for all devices",
+  "main": "index.js",
+  "scripts": {
+    "prepare": "husky install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kamaal111/app-icon-generator.git"
+  },
+  "author": "Kamaal Farah",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kamaal111/app-icon-generator/issues"
+  },
+  "homepage": "https://github.com/kamaal111/app-icon-generator#readme",
+  "devDependencies": {
+    "husky": "^7.0.2"
+  }
+}
