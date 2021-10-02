@@ -1,6 +1,7 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
+rm -rf bin
 echo "building binary"
 go build -o bin/app-icon-generator
 echo "done building binary"
