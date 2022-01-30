@@ -409,7 +409,7 @@ const CONTENTS = `
 		"subtype" : "44mm"
 	  },
 	  {
-		"filename" : "216-1.png",
+		"filename" : "234.png",
 		"idiom" : "watch",
 		"role" : "quickLook",
 		"scale" : "2x",
