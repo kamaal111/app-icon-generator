@@ -337,6 +337,7 @@ const CONTENTS = `
 		"size" : "29x29"
 	  },
 	  {
+		"filename" : "66.png",
 		"idiom" : "watch",
 		"role" : "notificationCenter",
 		"scale" : "2x",
@@ -360,6 +361,7 @@ const CONTENTS = `
 		"subtype" : "40mm"
 	  },
 	  {
+		"filename" : "92.png",
 		"idiom" : "watch",
 		"role" : "appLauncher",
 		"scale" : "2x",
@@ -375,6 +377,7 @@ const CONTENTS = `
 		"subtype" : "44mm"
 	  },
 	  {
+		"filename" : "102.png",
 		"idiom" : "watch",
 		"role" : "appLauncher",
 		"scale" : "2x",
@@ -406,6 +409,7 @@ const CONTENTS = `
 		"subtype" : "44mm"
 	  },
 	  {
+		"filename" : "216-1.png",
 		"idiom" : "watch",
 		"role" : "quickLook",
 		"scale" : "2x",
