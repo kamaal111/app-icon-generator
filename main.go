@@ -55,6 +55,9 @@ func main() {
 	var createdImageNames []string
 	var channelsCreated []chan string
 
+	decodedImage, err := decodeImage(*inputPath)
+	checkError(err)
+
 	for _, imageItem := range contentsFileContent.Images {
 		sizeValueString := splitStringByX(imageItem.Size)[0]
 		sizeValue, err := strconv.ParseFloat(sizeValueString, 64)
@@ -78,49 +81,48 @@ func main() {
 
 		channel := make(chan string)
 		channelsCreated = append(channelsCreated, channel)
-		go createImage(*inputPath, imageItem, scaledSize, outputDirectory, channel)
+		go createImage(decodedImage, imageItem, scaledSize, outputDirectory, channel)
 
 		createdImageNames = append(createdImageNames, imageItem.Filename)
 	}
 
-	channelsCreatedLength := len(channelsCreated)
 	for index, channel := range channelsCreated {
 		<-channel
-		logVerbose(fmt.Sprintf("created %d out of %d", index+1, channelsCreatedLength), *verbose)
+		logVerbose(fmt.Sprintf("created %d out of %d", index+1, len(channelsCreated)), *verbose)
 	}
 
 	elapsed := time.Since(start)
 	fmt.Printf("done creating icons in %s\n", elapsed)
 }
 
-func createImage(inputPath string, imageItem ImageItem, size float64, outputDirectory string, channel chan string) {
+func createImage(decodedImage image.Image, imageItem ImageItem, size float64, outputDirectory string, channel chan string) {
 	output, err := os.Create(filepath.Join(outputDirectory, imageItem.Filename))
 	checkError(err)
 	defer output.Close()
 
-	input, err := os.Open(inputPath)
-	checkError(err)
-	defer input.Close()
-
-	fileExtension := getFileExtension(inputPath)
-	var decodedInput image.Image
-	switch fileExtension {
-	case "jpeg", "jpg":
-		decodedInput, err = jpeg.Decode(input)
-		checkError(err)
-	case "png":
-		decodedInput, err = png.Decode(input)
-		checkError(err)
-	default:
-		fmt.Printf("%s file extension are not supported", fileExtension)
-		os.Exit(1)
-	}
-
 	inputSpecs := image.NewRGBA(image.Rect(0, 0, int(size), int(size)))
-	draw.NearestNeighbor.Scale(inputSpecs, inputSpecs.Rect, decodedInput, decodedInput.Bounds(), draw.Over, nil)
+	draw.NearestNeighbor.Scale(inputSpecs, inputSpecs.Rect, decodedImage, decodedImage.Bounds(), draw.Over, nil)
 	png.Encode(output, inputSpecs)
 
 	channel <- imageItem.Filename
+}
+
+func decodeImage(path string) (image.Image, error) {
+	input, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer input.Close()
+
+	fileExtension := getFileExtension(path)
+	switch fileExtension {
+	case "jpeg", "jpg":
+		return jpeg.Decode(input)
+	case "png":
+		return png.Decode(input)
+	default:
+		return nil, fmt.Errorf("%s file extension are not supported", fileExtension)
+	}
 }
 
 func logVerbose(text string, enabled bool) {
