@@ -104,12 +104,16 @@ func createImage(inputPath string, imageItem ImageItem, size float64, outputDire
 
 	fileExtension := getFileExtension(inputPath)
 	var decodedInput image.Image
-	if fileExtension == "jpeg" {
+	switch fileExtension {
+	case "jpeg", "jpg":
 		decodedInput, err = jpeg.Decode(input)
 		checkError(err)
-	} else {
+	case "png":
 		decodedInput, err = png.Decode(input)
 		checkError(err)
+	default:
+		fmt.Printf("%s file extension are not supported", fileExtension)
+		os.Exit(1)
 	}
 
 	inputSpecs := image.NewRGBA(image.Rect(0, 0, int(size), int(size)))
