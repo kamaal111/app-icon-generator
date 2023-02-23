@@ -8,6 +8,7 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -38,48 +39,70 @@ func main() {
 		os.Exit(1)
 	}
 
+	err := GenerateAppIcons(*outputPath, *inputPath, *verbose)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	elapsed := time.Since(start)
+	fmt.Printf("done creating icons in %s\n", elapsed)
+}
+
+func GenerateAppIcons(outputPath string, inputPath string, verbose bool) error {
 	contentsFileContent := ContentFile{}
 	err := json.Unmarshal(contentsFile, &contentsFileContent)
-	checkError(err)
+	if err != nil {
+		return err
+	}
 
-	outputDirectory := filepath.Join(*outputPath, "AppIcon.appiconset")
+	outputDirectory := filepath.Join(outputPath, "AppIcon.appiconset")
 
 	os.RemoveAll(outputDirectory)
 
 	err = os.MkdirAll(outputDirectory, os.ModePerm)
-	checkError(err)
+	if err != nil {
+		return err
+	}
 
 	err = os.WriteFile(filepath.Join(outputDirectory, "Contents.json"), contentsFile, 0644)
-	checkError(err)
+	if err != nil {
+		return err
+	}
 
 	var createdImageNames []string
-	var channelsCreated []chan string
+	var channelsCreated []chan error
 
-	decodedImage, err := decodeImage(*inputPath)
-	checkError(err)
+	decodedImage, err := decodeImage(inputPath)
+	if err != nil {
+		return err
+	}
 
 	for _, imageItem := range contentsFileContent.Images {
 		sizeValueString := splitStringByX(imageItem.Size)[0]
 		sizeValue, err := strconv.ParseFloat(sizeValueString, 64)
-		checkError(err)
+		if err != nil {
+			return err
+		}
 
 		scaleValueString := splitStringByX(imageItem.Scale)[0]
 		scaleValue, err := strconv.ParseFloat(scaleValueString, 64)
-		checkError(err)
+		if err != nil {
+			return err
+		}
 
 		scaledSize := sizeValue * scaleValue
 
 		if imageItem.Filename == "" {
-			logVerbose(fmt.Sprintf("could not find filename for size of %f", scaledSize), *verbose)
+			logVerbose(fmt.Sprintf("could not find filename for size of %f", scaledSize), verbose)
 			continue
 		}
 
 		if contains(createdImageNames, imageItem.Filename) {
-			logVerbose(fmt.Sprintf("file with name %s already created", imageItem.Filename), *verbose)
+			logVerbose(fmt.Sprintf("file with name %s already created", imageItem.Filename), verbose)
 			continue
 		}
 
-		channel := make(chan string)
+		channel := make(chan error)
 		channelsCreated = append(channelsCreated, channel)
 		go createImage(decodedImage, imageItem, scaledSize, outputDirectory, channel)
 
@@ -87,24 +110,29 @@ func main() {
 	}
 
 	for index, channel := range channelsCreated {
-		<-channel
-		logVerbose(fmt.Sprintf("created %d out of %d", index+1, len(channelsCreated)), *verbose)
+		err = <-channel
+		if err != nil {
+			return err
+		}
+		logVerbose(fmt.Sprintf("created %d out of %d", index+1, len(channelsCreated)), verbose)
 	}
 
-	elapsed := time.Since(start)
-	fmt.Printf("done creating icons in %s\n", elapsed)
+	return nil
 }
 
-func createImage(decodedImage image.Image, imageItem ImageItem, size float64, outputDirectory string, channel chan string) {
+func createImage(decodedImage image.Image, imageItem ImageItem, size float64, outputDirectory string, channel chan error) {
 	output, err := os.Create(filepath.Join(outputDirectory, imageItem.Filename))
-	checkError(err)
+	if err != nil {
+		channel <- err
+		return
+	}
 	defer output.Close()
 
 	inputSpecs := image.NewRGBA(image.Rect(0, 0, int(size), int(size)))
 	draw.NearestNeighbor.Scale(inputSpecs, inputSpecs.Rect, decodedImage, decodedImage.Bounds(), draw.Over, nil)
 	png.Encode(output, inputSpecs)
 
-	channel <- imageItem.Filename
+	channel <- nil
 }
 
 func decodeImage(path string) (image.Image, error) {
@@ -131,20 +159,13 @@ func logVerbose(text string, enabled bool) {
 	}
 }
 
-func contains(array []string, searchValue string) bool {
+func contains[Element comparable](array []Element, searchValue Element) bool {
 	for _, item := range array {
 		if item == searchValue {
 			return true
 		}
 	}
 	return false
-}
-
-func checkError(err error) {
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
 }
 
 func getFileExtension(str string) string {
