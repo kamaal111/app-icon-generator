@@ -49,7 +49,7 @@ func main() {
 }
 
 func GenerateAppIcons(outputPath string, inputPath string, verbose bool) error {
-	contentsFileContent := ContentFile{}
+	contentsFileContent := contentFile{}
 	err := json.Unmarshal(contentsFile, &contentsFileContent)
 	if err != nil {
 		return err
@@ -120,7 +120,7 @@ func GenerateAppIcons(outputPath string, inputPath string, verbose bool) error {
 	return nil
 }
 
-func createImage(decodedImage image.Image, imageItem ImageItem, size float64, outputDirectory string, channel chan error) {
+func createImage(decodedImage image.Image, imageItem imageItem, size float64, outputDirectory string, channel chan error) {
 	output, err := os.Create(filepath.Join(outputDirectory, imageItem.Filename))
 	if err != nil {
 		channel <- err
@@ -180,19 +180,19 @@ func splitStringByX(str string) []string {
 	})
 }
 
-type ImageItem struct {
+type imageItem struct {
 	Filename string `json:"filename"`
 	Idiom    string `json:"idiom"`
 	Scale    string `json:"scale"`
 	Size     string `json:"size"`
 }
 
-type ContentInfo struct {
+type contentInfo struct {
 	Author  string `json:"author"`
 	Version int    `json:"version"`
 }
 
-type ContentFile struct {
-	Images []ImageItem `json:"images"`
-	Info   ContentInfo `json:"info"`
+type contentFile struct {
+	Images []imageItem `json:"images"`
+	Info   contentInfo `json:"info"`
 }
